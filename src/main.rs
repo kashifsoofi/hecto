@@ -31,21 +31,30 @@ impl Drop for Cleanup {
 fn main() {
     let _cleanup = Cleanup;
     enable_raw_mode().expect("Failed to enable raw mode");
-
-    for b in io::stdin().bytes() {
-        match b {
-            Ok(b) => {
-                let c = b as char;
-                if c.is_control() {
-                    println!("{:?} \r", b);
-                } else {
-                    println!("{:?} ({}) \r", b, c);
-                }
-                if b == to_ctrl_byte('q') {
-                    break;
-                }
-            },
-            Err(err) => die(err),
+    loop {
+        if let Event::Key(event) = read().unwrap() {
+            match event {
+                KeyEvent {
+                    code: KeyCode::Char('q'),
+                    modifiers: KeyModifiers::CONTROL,
+                    kind: KeyEventKind::Press,
+                    state: KeyEventState::NONE,
+                } => break,
+                KeyEvent {
+                    code: key_code @ KeyCode::Char(..),
+                    modifiers: KeyModifiers::NONE,
+                    kind: KeyEventKind::Press,
+                    state: KeyEventState::NONE,
+                } => {
+                    match key_code {
+                        KeyCode::Char(c) => {
+                            println!("{}\r", c);
+                        },
+                        _ => {},
+                    }
+                },
+                _ => {}
+            }
         }
     }
 }
